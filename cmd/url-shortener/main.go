@@ -2,6 +2,8 @@ package main
 
 import (
 	"github/closidx/url-shortener/internal/config"
+	"github/closidx/url-shortener/internal/lib/logger/sl"
+	"github/closidx/url-shortener/internal/storage/sqlite"
 	"log/slog"
 	"os"
 )
@@ -23,13 +25,13 @@ func main() {
 	)
 	log.Debug("debug messages are enabled")
 
-	// init logger
+	storage, err := sqlite.New(cfg.StoragePath)
+	if err != nil {
+		log.Error("failed to init storage", sl.Err(err))
+		os.Exit(1)
+	}
 
-	// init storage
-
-	// init router
-
-	// run server
+	_ = storage
 }
 
 func setupLogger(env string) *slog.Logger {
