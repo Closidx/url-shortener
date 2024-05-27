@@ -6,6 +6,9 @@ import (
 	"github/closidx/url-shortener/internal/storage/sqlite"
 	"log/slog"
 	"os"
+
+	"github.com/go-chi/chi/v5"
+	"github.com/go-chi/chi/v5/middleware"
 )
 
 const (
@@ -30,6 +33,11 @@ func main() {
 		log.Error("failed to init storage", sl.Err(err))
 		os.Exit(1)
 	}
+
+	router := chi.NewRouter()
+
+	router.Use(middleware.RequestID)
+	router.Use(middleware.Logger)
 
 	_ = storage
 }
