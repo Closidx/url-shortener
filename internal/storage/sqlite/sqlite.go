@@ -34,8 +34,7 @@ func (s *Storage) SaveURL(urlToSave string, alias string) (int64, error) {
 
 	res, err := stmt.Exec(urlToSave, alias)
 	if err != nil {
-		sqliteErr, ok := err.(sqlite3.Error)
-		if ok && sqliteErr.ExtendedCode == sqlite3.ErrConstraintUnique {
+		if sqliteErr, ok := err.(sqlite3.Error); ok && sqliteErr.ExtendedCode == sqlite3.ErrConstraintUnique {
 			return 0, fmt.Errorf("%s: %w", op, storage.ErrURLExists)
 		}
 
@@ -100,4 +99,25 @@ func (s *Storage) DeleteURL(alias string) error {
 	}
   
 	return nil
+}
+
+func (s *Storage) CheckAliasExists(alias string) (bool, error) {
+    const op = "storage.sqlite.CheckAliasExists"
+
+	stmt, err := s.db.Prepare("SELECT COUNT(*) FROM url WHERE alias = ?")
+	if err != nil {
+	  return false, fmt.Errorf("%s: prepare statement: %w", op, err)
+	}
+
+	var count int
+    err = stmt.QueryRow(alias).Scan(&count)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+		  return false, nil
+		}
+	
+		return false, fmt.Errorf("%s: execute statement: %w", op, err)
+	  }
+
+    return count > 0, nil
 }

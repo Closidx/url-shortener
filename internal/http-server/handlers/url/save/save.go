@@ -29,6 +29,7 @@ const aliasLength = 6
 //go:generate go run github.com/vektra/mockery/v2 --name=URLSaver
 type URLSaver interface {
 	SaveURL(urlToSave string, alias string) (int64, error)
+	CheckAliasExists(alias string) (bool, error)
 }
 
 func New(log *slog.Logger, urlSave URLSaver) http.HandlerFunc {
@@ -63,38 +64,52 @@ func New(log *slog.Logger, urlSave URLSaver) http.HandlerFunc {
 			return
 		}
 
-		alias := req.Alias
-		if alias == "" {
-			for {
-				alias = random.NewRandomString(aliasLength)
-				_, err := urlSave.SaveURL(req.URL, alias)
+		alias, err := getPreparedAlias(req.Alias, urlSave)
+		if err != nil {
+            log.Error("failed to get prepared alias", sl.Err(err))
 
-				if !errors.Is(err, storage.ErrURLExists) {
-					responseOK(w, r, alias)
-					break
-				}
-			}
+            render.JSON(w, r, resp.Error("failed to get prepared alias"))
 
-		} else {
-			id, err := urlSave.SaveURL(req.URL, alias)
-			if errors.Is(err, storage.ErrURLExists) {
-				log.Info("url already exist", slog.String("url", req.URL))
+			return
+        }
 
-				render.JSON(w, r, resp.Error("url already exist"))
+		id, err := urlSave.SaveURL(req.URL, alias)
+		if errors.Is(err, storage.ErrURLExists) {
+			log.Info("url already exist", slog.String("url", req.URL))
 
-				return
-			}
-			if err != nil {
-				log.Error("failed to add url", sl.Err(err))
+			render.JSON(w, r, resp.Error("url already exist"))
 
-				render.JSON(w, r, resp.Error("failed to add url"))
+			return
+		}
+		if err != nil {
+			log.Error("failed to add url", sl.Err(err))
 
-				return
-			}
+			render.JSON(w, r, resp.Error("failed to add url"))
 
-			log.Info("url added", slog.Int64("id", id))
+			return
+		}
 
-			responseOK(w, r, alias)
+		log.Info("url added", slog.Int64("id", id))
+
+		responseOK(w, r, alias)
+	}
+}
+
+func getPreparedAlias(alias string, urlSave URLSaver) (string, error) {
+	if alias != "" {
+		return alias, nil
+	}
+
+	for {
+		alias = random.NewRandomString(aliasLength)
+
+		exist, err := urlSave.CheckAliasExists(alias)
+		if err != nil {
+            return "", err
+        }
+
+		if !exist {
+			return alias, nil
 		}
 	}
 }
