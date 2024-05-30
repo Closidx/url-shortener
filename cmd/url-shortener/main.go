@@ -2,9 +2,12 @@ package main
 
 import (
 	"github/closidx/url-shortener/internal/config"
+	"github/closidx/url-shortener/internal/http-server/handlers/url/save"
+	"github/closidx/url-shortener/internal/http-server/middleware/logger"
 	"github/closidx/url-shortener/internal/lib/logger/sl"
 	"github/closidx/url-shortener/internal/storage/sqlite"
 	"log/slog"
+	"net/http"
 	"os"
 
 	"github.com/go-chi/chi/v5"
@@ -34,12 +37,32 @@ func main() {
 		os.Exit(1)
 	}
 
+	_ = storage
+
 	router := chi.NewRouter()
 
 	router.Use(middleware.RequestID)
-	router.Use(middleware.Logger)
+	router.Use(logger.New(log))
+	router.Use(middleware.Recoverer)
+	router.Use(middleware.URLFormat)
 
-	_ = storage
+	router.Post("/url", save.New(log, storage))
+
+	log.Info("starting server", slog.String("address", cfg.HTTPServer.Address))
+
+	srv := &http.Server{
+		Addr: cfg.HTTPServer.Address,
+		Handler: router,
+		ReadTimeout: cfg.HTTPServer.Timeout,
+		WriteTimeout: cfg.HTTPServer.Timeout,
+		IdleTimeout: cfg.HTTPServer.IdleTimeout,
+	}
+
+	if err := srv.ListenAndServe(); err != nil {
+		log.Error("failed to start server")
+	}
+
+	log.Error("server stopped")
 }
 
 func setupLogger(env string) *slog.Logger {
