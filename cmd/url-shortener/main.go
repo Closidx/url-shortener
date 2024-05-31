@@ -3,6 +3,7 @@ package main
 import (
 	"github/closidx/url-shortener/internal/config"
 	"github/closidx/url-shortener/internal/http-server/handlers/redirect"
+	delete_url "github/closidx/url-shortener/internal/http-server/handlers/url/delete"
 	"github/closidx/url-shortener/internal/http-server/handlers/url/save"
 	"github/closidx/url-shortener/internal/http-server/middleware/logger"
 	"github/closidx/url-shortener/internal/lib/logger/sl"
@@ -49,6 +50,7 @@ func main() {
 
 	router.Post("/url", save.New(log, storage))
 	router.Get("/{alias}", redirect.New(log, storage))
+	router.Delete("/url/{alias}", delete_url.New(log, storage))
 
 	log.Info("starting server", slog.String("address", cfg.HTTPServer.Address))
 
