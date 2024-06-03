@@ -9,6 +9,34 @@ type URLSaver struct {
 	mock.Mock
 }
 
+// CheckAliasExists provides a mock function with given fields: alias
+func (_m *URLSaver) CheckAliasExists(alias string) (bool, error) {
+	ret := _m.Called(alias)
+
+	if len(ret) == 0 {
+		panic("no return value specified for CheckAliasExists")
+	}
+
+	var r0 bool
+	var r1 error
+	if rf, ok := ret.Get(0).(func(string) (bool, error)); ok {
+		return rf(alias)
+	}
+	if rf, ok := ret.Get(0).(func(string) bool); ok {
+		r0 = rf(alias)
+	} else {
+		r0 = ret.Get(0).(bool)
+	}
+
+	if rf, ok := ret.Get(1).(func(string) error); ok {
+		r1 = rf(alias)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
 // SaveURL provides a mock function with given fields: urlToSave, alias
 func (_m *URLSaver) SaveURL(urlToSave string, alias string) (int64, error) {
 	ret := _m.Called(urlToSave, alias)
