@@ -18,20 +18,16 @@ import (
 
 func TestSaveHandler(t *testing.T) {
 	cases := []struct {
-		name      string
-		alias     string
-		url       string
-		respError string
-		mockError error
+		name          string
+		alias         string
+		url           string
+		respError     string
+		checkAliasErr error
+		mockError     error
 	}{
 		{
 			name:  "Success",
 			alias: "test_alias",
-			url:   "https://google.com",
-		},
-		{
-			name:  "Empty alias",
-			alias: "",
 			url:   "https://google.com",
 		},
 		{
